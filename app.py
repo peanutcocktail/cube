@@ -63,7 +63,8 @@ def generate_mesh(
         mesh = trimesh.Trimesh(vertices, faces)
         mesh.export(obj_path)
     
-    return obj_path
+    # Return both the file path for download and the same path for 3D display
+    return [obj_path, obj_path]
 
 def app():
     # Determine device for display
