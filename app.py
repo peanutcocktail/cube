@@ -3,8 +3,6 @@ import torch
 import gradio as gr
 import trimesh
 import platform
-import numpy as np
-from PIL import Image
 from cube3d.inference.engine import Engine, EngineFast
 from cube3d.mesh_utils.postprocessing import (
     PYMESHLAB_AVAILABLE,
@@ -13,80 +11,11 @@ from cube3d.mesh_utils.postprocessing import (
     save_mesh,
 )
 
-def simple_mesh_preview(obj_path, output_dir, angles=4):
-    """Create a simple mesh preview without using Blender"""
-    # Load the mesh
-    try:
-        mesh = trimesh.load_mesh(obj_path)
-        
-        # Create a scene with the mesh at the origin
-        scene = trimesh.Scene(mesh)
-        
-        # Get some basic dimensions
-        extents = mesh.bounding_box.extents
-        camera_distance = extents.max() * 2.0
-        
-        # Generate views from different angles
-        image_paths = []
-        for i in range(angles):
-            # Calculate angle in radians
-            theta = i * (2.0 * np.pi / angles)
-            
-            # Set camera position in a circle around the object
-            camera_pos = [
-                camera_distance * np.cos(theta),
-                camera_distance * np.sin(theta),
-                camera_distance * 0.5  # Slightly elevated
-            ]
-            
-            # Look at the center of the mesh
-            scene.set_camera(
-                angles=[0.0, 0.0, 0.0],
-                distance=camera_distance,
-                fov=[60, 60],
-                resolution=[512, 512],
-                point=mesh.centroid,
-                camera_origin=camera_pos
-            )
-            
-            # Render the scene
-            try:
-                png = scene.save_image(resolution=[512, 512], visible=True)
-                
-                # Save the view
-                image_path = os.path.join(output_dir, f"view_{i:02d}.png")
-                with open(image_path, 'wb') as f:
-                    f.write(png)
-                image_paths.append(image_path)
-            except Exception as e:
-                print(f"Error rendering view {i}: {e}")
-                continue
-        
-        # If we have multiple views, create a simple grid image
-        if len(image_paths) > 0:
-            imgs = [Image.open(p) for p in image_paths]
-            
-            # Create a grid of images
-            rows = int(np.ceil(len(imgs) / 2))
-            cols = min(2, len(imgs))
-            w, h = imgs[0].size
-            grid = Image.new('RGB', (cols * w, rows * h))
-            
-            for i, img in enumerate(imgs):
-                grid.paste(img, (w * (i % cols), h * (i // cols)))
-            
-            grid_path = os.path.join(output_dir, "mesh_preview.png")
-            grid.save(grid_path)
-            return grid_path
-    except Exception as e:
-        print(f"Error creating preview: {e}")
-    return None
 
 def generate_mesh(
     prompt,
     fast_inference,
     resolution_base,
-    render_gif,
     disable_postprocessing,
     output_dir="outputs"
 ):
@@ -134,13 +63,7 @@ def generate_mesh(
         mesh = trimesh.Trimesh(vertices, faces)
         mesh.export(obj_path)
     
-    # Render preview
-    preview_path = None
-    if render_gif:
-        # Use simple preview without Blender
-        preview_path = simple_mesh_preview(obj_path, output_dir)
-    
-    return [obj_path, preview_path]
+    return obj_path
 
 def app():
     # Determine device for display
@@ -157,7 +80,7 @@ def app():
         gr.Markdown(f"**Running on:** {device_info}")
         
         with gr.Row():
-            with gr.Column():
+            with gr.Column(scale=1):
                 prompt = gr.Textbox(
                     label="Text Prompt", 
                     placeholder="Broad-winged flying red dragon, elongated, folded legs.",
@@ -180,32 +103,29 @@ def app():
                         step=0.5, 
                         value=8.0
                     )
-                    render_gif = gr.Checkbox(
-                        label="Generate Preview Images", 
-                        value=True,
-                        info="Creates a simple multi-view preview of the generated mesh"
-                    )
                     disable_postprocessing = gr.Checkbox(
                         label="Disable Mesh Postprocessing", 
                         value=False
                     )
                 
                 generate_btn = gr.Button("Generate 3D Model", variant="primary")
+                obj_file = gr.File(label="Download OBJ File")
             
-            with gr.Column():
-                obj_file = gr.File(label="Generated OBJ File")
-                gif_preview = gr.Image(label="Mesh Preview")
+            with gr.Column(scale=2):
+                model_3d = gr.Model3D(
+                    label="3D Model Preview",
+                    clear_color=[0.0, 0.0, 0.0, 0.0],  # Transparent background
+                )
         
         generate_btn.click(
             fn=generate_mesh,
             inputs=[
                 prompt, 
                 fast_inference, 
-                resolution_base, 
-                render_gif, 
+                resolution_base,
                 disable_postprocessing
             ],
-            outputs=[obj_file, gif_preview]
+            outputs=[obj_file, model_3d]
         )
         
         gr.Markdown("""
