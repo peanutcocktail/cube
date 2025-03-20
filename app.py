@@ -2,6 +2,7 @@ import os
 import torch
 import gradio as gr
 import trimesh
+import platform
 from cube3d.inference.engine import Engine, EngineFast
 from cube3d.mesh_utils.postprocessing import (
     PYMESHLAB_AVAILABLE,
@@ -20,15 +21,25 @@ def generate_mesh(
     output_dir="outputs"
 ):
     os.makedirs(output_dir, exist_ok=True)
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    
+    # Determine available device (CUDA, MPS, or CPU)
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+    
+    print(f"Using device: {device}")
     
     # Default paths
     config_path = "cube3d/configs/open_model.yaml"
     gpt_ckpt_path = "model_weights/shape_gpt.safetensors"
     shape_ckpt_path = "model_weights/shape_tokenizer.safetensors"
     
-    # Initialize engine based on fast_inference flag
-    if fast_inference and torch.cuda.is_available():
+    # Initialize engine based on device and fast_inference flag
+    # Note: EngineFast is only compatible with CUDA
+    if fast_inference and device.type == "cuda":
         engine = EngineFast(
             config_path, gpt_ckpt_path, shape_ckpt_path, device=device
         )
@@ -74,9 +85,13 @@ def app():
                 )
                 
                 with gr.Accordion("Model Settings", open=False):
+                    # Only enable fast_inference checkbox if CUDA is available
+                    cuda_available = torch.cuda.is_available()
                     fast_inference = gr.Checkbox(
                         label="Fast Inference (CUDA only)", 
-                        value=torch.cuda.is_available()
+                        value=cuda_available,
+                        interactive=cuda_available,
+                        info="Only available on NVIDIA GPUs with CUDA"
                     )
                     resolution_base = gr.Slider(
                         label="Resolution Base", 
