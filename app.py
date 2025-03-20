@@ -72,9 +72,18 @@ def generate_mesh(
     return [obj_path, gif_path if gif_path else None]
 
 def app():
+    # Determine device for display
+    if torch.cuda.is_available():
+        device_info = f"CUDA: {torch.cuda.get_device_name(0)}"
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        device_info = "Apple Silicon (MPS)"
+    else:
+        device_info = "CPU"
+    
     with gr.Blocks(title="Cube3D - Text to 3D Shape Generator") as demo:
         gr.Markdown("# Cube3D - Text to 3D Shape Generator")
         gr.Markdown("Generate 3D models from text prompts using Roblox's Cube3D model")
+        gr.Markdown(f"**Running on:** {device_info}")
         
         with gr.Row():
             with gr.Column():
@@ -135,7 +144,11 @@ def app():
         3. Click "Generate 3D Model" button
         4. Download the OBJ file or view the turntable animation if enabled
         
-        **Note:** First-time generation may take longer as the model is being loaded.
+        **Notes:** 
+        - First-time generation may take longer as the model is being loaded
+        - The app supports CUDA (NVIDIA GPUs), MPS (Apple Silicon), and CPU backends
+        - Fast inference is only available on CUDA devices
+        - For Apple Silicon, the generation process will automatically use the MPS backend for improved performance
         """)
     
     return demo
