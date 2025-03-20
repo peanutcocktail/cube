@@ -120,7 +120,8 @@ engine_fast = EngineFast( # only supported on CUDA devices, replace with Engine 
 
 # inference
 input_prompt = "A pair of noise-canceling headphones"
-mesh_v_f = engine_fast.t2s([input_prompt], use_kv_cache=True, resolution_base=8.0) # Reduce resolution_base for faster inference and lower VRAM usage
+# NOTE: Reduce `resolution_base` for faster inference and lower VRAM usage
+mesh_v_f = engine_fast.t2s([input_prompt], use_kv_cache=True, resolution_base=8.0)
 
 # save output
 vertices, faces = mesh_v_f[0][0], mesh_v_f[0][1]
