@@ -49,12 +49,6 @@ Download the model weights from [hugging face](https://huggingface.co/Roblox/cub
 huggingface-cli download Roblox/cube3d-v0.1 --local-dir ./model_weights
 ```
 
-### Hardware Requirements
-
-We have tested our model on Nvidia H100 GPU, Nvidia A100 GPU, Nvidia Geforce
-3080, and Apple Silicon M Chips. We recommend using a GPU with at least 24GB of
-VRAM available. 
-
 ### Inference
 
 #### 1. Shape Generation
@@ -94,6 +88,16 @@ python -m cube3d.vq_vae_encode_decode \
 
 This will process the `.obj` file located at `./outputs/output.obj` and prints the tokenized representation as well as exports the mesh reconstructed from the token indices.
 
+### Hardware Requirements
+
+We have tested our model on:
+* Nvidia H100 GPU
+* Nvidia A100 GPU
+* Nvidia Geforce 3080
+* Apple Silicon M2-4 Chips.
+
+We recommend using a GPU with at least 24GB of VRAM available when using `--fast-inference` (or `EngineFast`) and 16GB otherwise. 
+
 ### Code Usage
 
 We have designed a minimalist API that allows the use this repo as a Python library:
@@ -107,7 +111,7 @@ from cube3d.inference.engine import Engine, EngineFast
 config_path = "cube3d/configs/open_model.yaml"
 gpt_ckpt_path = "model_weights/shape_gpt.safetensors"
 shape_ckpt_path = "model_weights/shape_tokenizer.safetensors"
-engine_fast = EngineFast(
+engine_fast = EngineFast( # only supported on CUDA devices, replace with Engine otherwise
     config_path, 
     gpt_ckpt_path, 
     shape_ckpt_path, 
@@ -116,7 +120,7 @@ engine_fast = EngineFast(
 
 # inference
 input_prompt = "A pair of noise-canceling headphones"
-mesh_v_f = engine_fast.t2s([input_prompt], use_kv_cache=True)
+mesh_v_f = engine_fast.t2s([input_prompt], use_kv_cache=True, resolution_base=8.0) # Reduce resolution_base for faster inference and lower VRAM usage
 
 # save output
 vertices, faces = mesh_v_f[0][0], mesh_v_f[0][1]
