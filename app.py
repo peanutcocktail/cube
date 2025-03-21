@@ -94,7 +94,7 @@ def app():
                     fast_inference = gr.Checkbox(
                         label="Fast Inference (CUDA with 24GB+ VRAM Only)", 
                         value=False,
-                        interactive=cuda_available,
+                        interactive=True,
                         info="Only available on NVIDIA GPUs with CUDA"
                     )
                     resolution_base = gr.Slider(
