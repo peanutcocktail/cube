@@ -88,7 +88,7 @@ def app():
                     lines=3
                 )
                 
-                with gr.Accordion("Model Settings", open=False):
+                with gr.Accordion("Model Settings"):
                     # Only enable fast_inference checkbox if CUDA is available
                     #cuda_available = torch.cuda.is_available()
                     fast_inference = gr.Checkbox(
