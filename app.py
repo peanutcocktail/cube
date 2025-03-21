@@ -90,10 +90,10 @@ def app():
                 
                 with gr.Accordion("Model Settings", open=False):
                     # Only enable fast_inference checkbox if CUDA is available
-                    cuda_available = torch.cuda.is_available()
+                    #cuda_available = torch.cuda.is_available()
                     fast_inference = gr.Checkbox(
-                        label="Fast Inference (CUDA only)", 
-                        value=cuda_available,
+                        label="Fast Inference (CUDA with 24GB+ VRAM Only)", 
+                        value=False,
                         interactive=cuda_available,
                         info="Only available on NVIDIA GPUs with CUDA"
                     )
